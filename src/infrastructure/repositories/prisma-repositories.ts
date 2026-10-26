@@ -1,4 +1,4 @@
-import { Prisma, type Product as PrismaProduct, type Reservation as PrismaReservation, type User as PrismaUser } from "@prisma/client";
+import { Prisma, type Product as PrismaProduct, type Reservation as PrismaReservation, type User as PrismaUser } from "../../generated/prisma/client";
 import type { Product, Reservation, Role, User } from "../../domain/entities/entities";
 import type { Page, PaginationInput, ProductInput, ProductRepository, ReservationInput, ReservationRepository, ReservationView, RegisterInput, UserRepository } from "../../domain/repositories/repositories";
 import { prisma } from "../database/prisma-client";
@@ -134,5 +134,6 @@ export class PrismaReservationRepository implements ReservationRepository {
     return { pagination: pageInfo(page, limit, total), data: rows.map(mapReservation) };
   }
 }
+
 
 

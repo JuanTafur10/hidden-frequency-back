@@ -1,7 +1,12 @@
-import { PrismaClient, ProductCategory, UserRole } from "@prisma/client";
+import "dotenv/config";
+import { PrismaClient, ProductCategory, UserRole } from "../src/generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
 
-const prisma = new PrismaClient();
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) throw new Error("DATABASE_URL es necesaria para ejecutar el seed.");
+const adapter = new PrismaPg({ connectionString });
+const prisma = new PrismaClient({ adapter });
 
 const products = [
   { id: 1, title: "Daft Punk - Discovery", category: ProductCategory.VINILOS, price: 250000, description: "Edición especial 2LP del clásico de 2001. Estado: Mint (Nuevo).", imageUrl: "assets/images/daft-punk.jpg" },
@@ -16,7 +21,7 @@ async function main(): Promise<void> {
   for (const product of products) {
     await prisma.product.upsert({ where: { id: product.id }, update: product, create: product });
   }
-  await prisma.$executeRawUnsafe(`SELECT setval(pg_get_serial_sequence('products', 'id'), GREATEST((SELECT MAX(id) FROM products), 1))`);
+  await prisma.$executeRawUnsafe("SELECT setval(pg_get_serial_sequence('products', 'id'), GREATEST((SELECT MAX(id) FROM products), 1))");
 
   const adminEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
   const adminPassword = process.env.SEED_ADMIN_PASSWORD;
@@ -35,5 +40,5 @@ async function main(): Promise<void> {
 }
 
 main()
-  .catch((error: unknown) => { console.error("Falló el seed de Hidden Frequency.", error); process.exitCode = 1; })
+  .catch((error: unknown) => { console.error("Falló el seed de Hidden Frequency.", error instanceof Error ? error.message : "Error desconocido"); process.exitCode = 1; })
   .finally(async () => { await prisma.$disconnect(); });

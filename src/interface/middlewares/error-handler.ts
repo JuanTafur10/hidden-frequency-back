@@ -1,14 +1,18 @@
 import type { NextFunction, Request, Response } from "express";
-import { Prisma } from "@prisma/client";
+import { Prisma } from "../../generated/prisma/client";
 import { ZodError } from "zod";
 import { AppError } from "../../domain/entities/app-error";
 
-export function errorHandler(error: unknown, _request: Request, response: Response, _next: NextFunction): void {  if (error instanceof SyntaxError && "status" in error && error.status === 400) {
+export function errorHandler(error: unknown, _request: Request, response: Response, _next: NextFunction): void {
+  if (error instanceof SyntaxError && "status" in error && error.status === 400) {
     response.status(400).json({ error: "El cuerpo JSON no es válido." });
     return;
   }
   if (error instanceof ZodError) {
-    response.status(400).json({ error: "Solicitud inválida.", details: error.issues.map((issue) => ({ field: issue.path.join("."), message: issue.message })) });
+    response.status(400).json({
+      error: "Solicitud inválida.",
+      details: error.issues.map((issue) => ({ field: issue.path.join("."), message: issue.message }))
+    });
     return;
   }
   if (error instanceof AppError) {
@@ -23,4 +27,3 @@ export function errorHandler(error: unknown, _request: Request, response: Respon
   console.error("Error inesperado en la API:", error instanceof Error ? error.message : "Error desconocido");
   response.status(500).json({ error: "Ocurrió un error interno." });
 }
-
