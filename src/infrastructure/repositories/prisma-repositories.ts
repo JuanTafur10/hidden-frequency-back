@@ -6,8 +6,22 @@ import { prisma } from "../database/prisma-client";
 function mapUser(user: PrismaUser): User {
   return { id: user.id, name: user.name, email: user.email, passwordHash: user.passwordHash, role: user.role.toLowerCase() as Role, createdAt: user.createdAt };
 }
+function toDomainCategory(category: PrismaProduct["category"]): Product["category"] {
+  switch (category) {
+    case "VINILOS": return "Vinilos";
+    case "PEDALES": return "Pedales";
+    case "INSTRUMENTOS": return "Instrumentos";
+  }
+}
+function toDatabaseCategory(category: Product["category"]): PrismaProduct["category"] {
+  switch (category) {
+    case "Vinilos": return "VINILOS";
+    case "Pedales": return "PEDALES";
+    case "Instrumentos": return "INSTRUMENTOS";
+  }
+}
 function mapProduct(product: PrismaProduct): Product {
-  return { id: product.id, title: product.title, category: product.category as Product["category"], price: Number(product.price), description: product.description, imageUrl: product.imageUrl, createdAt: product.createdAt, updatedAt: product.updatedAt };
+  return { id: product.id, title: product.title, category: toDomainCategory(product.category), price: Number(product.price), description: product.description, imageUrl: product.imageUrl, createdAt: product.createdAt, updatedAt: product.updatedAt };
 }
 function pageInfo(page: number, limit: number, total: number) {
   return { page, limit, total, totalPages: Math.ceil(total / limit) };
@@ -36,7 +50,7 @@ export class PrismaUserRepository implements UserRepository {
 export class PrismaProductRepository implements ProductRepository {
   async list(input: PaginationInput): Promise<Page<Product>> {
     const where: Prisma.ProductWhereInput = {
-      ...(input.category ? { category: input.category.toUpperCase() as Prisma.EnumProductCategoryFilter["equals"] } : {}),
+      ...(input.category ? { category: toDatabaseCategory(input.category) } : {}),
       ...(input.search ? { OR: [
         { title: { contains: input.search, mode: "insensitive" } },
         { description: { contains: input.search, mode: "insensitive" } }
@@ -59,17 +73,20 @@ export class PrismaProductRepository implements ProductRepository {
   async create(input: ProductInput): Promise<Product> {
     return mapProduct(await prisma.product.create({ data: {
       ...input,
-      category: input.category.toUpperCase() as PrismaProduct["category"],
+      category: toDatabaseCategory(input.category),
       price: new Prisma.Decimal(input.price)
     } }));
   }
   async update(id: number, input: Partial<ProductInput>): Promise<Product | null> {
     if (!await prisma.product.findUnique({ where: { id }, select: { id: true } })) return null;
-    const product = await prisma.product.update({ where: { id }, data: {
-      ...input,
-      ...(input.category ? { category: input.category.toUpperCase() as PrismaProduct["category"] } : {}),
-      ...(input.price !== undefined ? { price: new Prisma.Decimal(input.price) } : {})
-    } });
+    const data: Prisma.ProductUpdateInput = {
+      ...(input.title !== undefined ? { title: input.title } : {}),
+      ...(input.category ? { category: toDatabaseCategory(input.category) } : {}),
+      ...(input.price !== undefined ? { price: new Prisma.Decimal(input.price) } : {}),
+      ...(input.description !== undefined ? { description: input.description } : {}),
+      ...(input.imageUrl !== undefined ? { imageUrl: input.imageUrl } : {})
+    };
+    const product = await prisma.product.update({ where: { id }, data });
     return mapProduct(product);
   }
   async delete(id: number): Promise<boolean> {
@@ -86,7 +103,7 @@ function mapReservation(row: PrismaReservation & { product: PrismaProduct | null
   return {
     ...reservation,
     product: row.product ? {
-      id: row.product.id, title: row.product.title, category: row.product.category as Product["category"],
+      id: row.product.id, title: row.product.title, category: toDomainCategory(row.product.category),
       price: Number(row.product.price), imageUrl: row.product.imageUrl
     } : null,
     ...(row.user ? { user: { id: row.user.id, name: row.user.name, email: row.user.email } } : {})
@@ -117,3 +134,5 @@ export class PrismaReservationRepository implements ReservationRepository {
     return { pagination: pageInfo(page, limit, total), data: rows.map(mapReservation) };
   }
 }
+
+
