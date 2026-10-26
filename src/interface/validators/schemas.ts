@@ -2,16 +2,21 @@ import { z } from "zod";
 
 const categorySchema = z.enum(["Vinilos", "Pedales", "Instrumentos"]);
 const positivePrice = z.coerce.number().finite().positive().max(1000000000);
+const passwordSchema = z.string().min(8).max(1024).refine((value) => Buffer.byteLength(value, "utf8") <= 72, "La contraseña no puede superar 72 bytes.");
+const imageUrlSchema = z.string().trim().min(1).max(500).refine((value) =>
+  value.startsWith("assets/") || (value.startsWith("/") && !value.startsWith("//")) || /^https?:\/\/\S+$/i.test(value),
+  "Usa una ruta local o una URL HTTP/HTTPS para la imagen."
+);
 
 export const registerSchema = z.object({
   name: z.string().trim().min(3).max(120),
   email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
-  password: z.string().min(8).max(72)
+  password: passwordSchema
 }).strict();
 
 export const loginSchema = z.object({
   email: z.string().trim().email().max(254).transform((value) => value.toLowerCase()),
-  password: z.string().min(1).max(72)
+  password: passwordSchema
 }).strict();
 
 export const productBodySchema = z.object({
@@ -19,7 +24,7 @@ export const productBodySchema = z.object({
   category: categorySchema,
   price: positivePrice,
   description: z.string().trim().min(5).max(1000),
-  imageUrl: z.string().trim().min(1).max(500)
+  imageUrl: imageUrlSchema
 }).strict();
 
 export const productUpdateSchema = productBodySchema.partial().refine((body) => Object.keys(body).length > 0, "Envía al menos un campo para actualizar.").strict();
@@ -55,3 +60,4 @@ export type ProductUpdateBody = z.infer<typeof productUpdateSchema>;
 export type ProductQuery = z.infer<typeof productQuerySchema>;
 export type ReservationBody = z.infer<typeof reservationBodySchema>;
 export type PageQuery = z.infer<typeof pageQuerySchema>;
+

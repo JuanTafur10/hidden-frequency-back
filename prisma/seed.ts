@@ -25,6 +25,8 @@ async function main(): Promise<void> {
 
   const adminEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
   const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+  if (Boolean(adminEmail) !== Boolean(adminPassword)) throw new Error("Configura juntos SEED_ADMIN_EMAIL y SEED_ADMIN_PASSWORD.");
+  if (adminPassword && Buffer.byteLength(adminPassword, "utf8") < 12) throw new Error("SEED_ADMIN_PASSWORD debe tener al menos 12 bytes.");
   if (adminEmail && adminPassword) {
     const passwordHash = await bcrypt.hash(adminPassword, 12);
     await prisma.user.upsert({
@@ -42,3 +44,4 @@ async function main(): Promise<void> {
 main()
   .catch((error: unknown) => { console.error("Falló el seed de Hidden Frequency.", error instanceof Error ? error.message : "Error desconocido"); process.exitCode = 1; })
   .finally(async () => { await prisma.$disconnect(); });
+
