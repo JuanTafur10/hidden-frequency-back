@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import request from "supertest";
 import type { AuthService } from "../src/application/services/auth-service";
 import type { ProductService } from "../src/application/services/product-service";
+import type { ProductImageService } from "../src/application/services/product-image-service";
 import type { ReservationService } from "../src/application/services/reservation-service";
 import { createApp } from "../src/interface/app";
 
@@ -23,6 +24,7 @@ const app = createApp({
     update: async (id: number, input: { price?: number }) => { updatedProductId = id; updatedProductPrice = input.price; return { id, ...input }; },
     delete: async () => undefined
   } as unknown as ProductService,
+  productImages: { upload: async () => ({ imageUrl: "https://res.cloudinary.com/demo/image/upload/test.png" }) } as unknown as ProductImageService,
   reservations: {
     create: async (userId: string, input: { productId?: number; requestedItem: string; notes?: string }) => {
       reservationAuthor = userId;
@@ -114,9 +116,19 @@ describe("protección y validación de rutas", () => {
     expect(adminResponse.status).toBe(200);
   });
 
+  it("exige rol admin para cargar imágenes y acepta un archivo válido", async () => {
+    const unauthorized = await request(app).post("/api/uploads/products").attach("image", Buffer.from("png"), { filename: "producto.png", contentType: "image/png" });
+    const forbidden = await request(app).post("/api/uploads/products").set("Authorization", `Bearer ${tokenFor("user")}`).attach("image", Buffer.from("png"), { filename: "producto.png", contentType: "image/png" });
+    const uploaded = await request(app).post("/api/uploads/products").set("Authorization", `Bearer ${tokenFor("admin")}`).attach("image", Buffer.from("png"), { filename: "producto.png", contentType: "image/png" });
+    expect(unauthorized.status).toBe(401);
+    expect(forbidden.status).toBe(403);
+    expect(uploaded.status).toBe(201);
+    expect(uploaded.body.data.imageUrl).toContain("cloudinary.com");
+  });
   it("limita CORS al origen configurado", async () => {
     const response = await request(app).get("/api/products").set("Origin", "https://hidden-frequency.vercel.app");
     expect(response.headers["access-control-allow-origin"]).toBe("https://hidden-frequency.vercel.app");
   });
 });
+
 
