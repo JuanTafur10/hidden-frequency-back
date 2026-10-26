@@ -62,6 +62,9 @@ Al desplegar, configura las mismas variables en el entorno privado de la platafo
 | `SEED_ADMIN_EMAIL` | Opcional: correo para crear/actualizar el usuario administrador. |
 | `SEED_ADMIN_PASSWORD` | Opcional: contraseña del administrador, nunca guardada en el repositorio. |
 | `SEED_ADMIN_NAME` | Opcional: nombre mostrado para el administrador. |
+| `CLOUDINARY_CLOUD_NAME` | Opcional: nombre del espacio Cloudinary para habilitar carga de archivos. |
+| `CLOUDINARY_API_KEY` | Opcional: clave Cloudinary privada para el backend. |
+| `CLOUDINARY_API_SECRET` | Opcional: secreto Cloudinary; nunca se entrega al navegador. |
 
 ## Endpoints
 
@@ -79,6 +82,7 @@ Las respuestas de colección tienen la forma `{ "pagination": { "page", "limit",
 | `POST` | `/api/reservations` | Usuario autenticado | Crea una solicitud para la cuenta del token. |
 | `GET` | `/api/reservations/mias?page=1&limit=12` | Usuario autenticado | Lista únicamente las solicitudes propias. |
 | `GET` | `/api/reservations?page=1&limit=12` | Admin | Lista todas las solicitudes con datos públicos de usuario y producto. |
+| `POST` | `/api/uploads/products` | Admin | Recibe `multipart/form-data` (`image`) y guarda el archivo en Cloudinary. |
 | `GET` | `/health` | Público | Comprueba que el proceso HTTP está disponible. |
 
 Las escrituras protegidas usan `Authorization: Bearer <token>`. El token lleva únicamente `id` y `role` como claims de aplicación, más `iat` y `exp` que añade JWT. Sin token, inválido o expirado se devuelve `401`; sin rol suficiente, `403`. Las credenciales incorrectas comparten el mismo mensaje `401` y ninguna respuesta incluye `password` ni `passwordHash`.
@@ -111,6 +115,8 @@ Las escrituras protegidas usan `Authorization: Bearer <token>`. El token lleva �
 }
 ```
 
+Para subir una imagen desde un archivo, envía el token admin como `Authorization: Bearer <token>` y el archivo en el campo multipart `image` a `POST /api/uploads/products`. Se aceptan JPEG, PNG y WebP de hasta 5 MB; el servidor revisa el contenido del archivo, lo almacena en Cloudinary y responde con `data.imageUrl`. Usa esa URL en el campo `imageUrl` al crear o actualizar el producto. Deben configurarse las tres variables `CLOUDINARY_*`; sin ellas, el endpoint responde `503` en lugar de fingir que guardó el archivo.
+
 Las reservas también aceptan `requestedItem` sin `productId` para solicitudes personalizadas. Los campos no admitidos se rechazan con `400`; errores de datos duplicados devuelven `409`; entidades inexistentes devuelven `404`. Los errores inesperados responden sin stack trace.
 
 ## Decisiones de implementación
@@ -123,4 +129,5 @@ Las reservas también aceptan `requestedItem` sin `productId` para solicitudes p
 
 ## Despliegue
 
-En Render (o una plataforma Node equivalente), configura `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `FRONTEND_URL` y las variables `SEED_ADMIN_*` privadas. Usa `npm run build` como comando de compilación, `npm start` para iniciar y ejecuta `npm run prisma:deploy` y `npm run prisma:seed` al preparar la base. En `FRONTEND_URL` debe ir el dominio de Vercel del front, sin `*`.
+En Render (o una plataforma Node equivalente), configura `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `FRONTEND_URL` y las variables `SEED_ADMIN_*` privadas. Usa `npm run build` como comando de compilación, `npm start` para iniciar y ejecuta `npm run prisma:deploy` y `npm run prisma:seed` al preparar la base. En `FRONTEND_URL` debe ir el dominio de Vercel del front, sin `*`. Para habilitar la carga de archivos, configura también las tres credenciales privadas de Cloudinary.
+
