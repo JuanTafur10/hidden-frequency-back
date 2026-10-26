@@ -27,11 +27,11 @@ export class AuthService {
     const user = await this.users.findByEmail(email);
     const passwordMatches = user ? await bcrypt.compare(password, user.passwordHash) : false;
     if (!user || !passwordMatches) throw new AppError(401, "Correo o contraseña incorrectos.", "INVALID_CREDENTIALS");
-    const token = jwt.sign({ role: user.role }, this.config.jwtSecret, {
-      subject: user.id,
+    const token = jwt.sign({ id: user.id, role: user.role }, this.config.jwtSecret, {
       expiresIn: this.config.jwtExpiresIn as SignOptions["expiresIn"]
     });
     return { user: toPublicUser(user), token };
   }
 }
+
 
