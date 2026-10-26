@@ -48,6 +48,11 @@ describe("protección de rutas del catálogo", () => {
     expect(response.status).toBe(204);
   });
 
+  it("responde 400 si el JSON está mal formado", async () => {
+    const response = await request(app).post("/api/auth/register").set("Content-Type", "application/json").send("{");
+    expect(response.status).toBe(400);
+    expect(response.body.error).toBe("El cuerpo JSON no es válido.");
+  });
   it("aplica la paginación predeterminada cuando no se envían parámetros", async () => {
     const response = await request(app).get("/api/products");
     expect(response.status).toBe(200);
@@ -56,3 +61,4 @@ describe("protección de rutas del catálogo", () => {
     expect(receivedLimit).toBe(12);
   });
 });
+

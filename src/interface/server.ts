@@ -12,7 +12,7 @@ const reservations = new PrismaReservationRepository();
 const app = createApp({
   auth: new AuthService(users, { jwtSecret: env.JWT_SECRET, jwtExpiresIn: env.JWT_EXPIRES_IN }),
   products: new ProductService(products),
-  reservations: new ReservationService(reservations),
+  reservations: new ReservationService(reservations, products),
   jwtSecret: env.JWT_SECRET,
   frontendUrl: env.FRONTEND_URL
 });
@@ -26,3 +26,4 @@ function shutdown(signal: string): void {
 }
 process.on("SIGINT", () => shutdown("SIGINT"));
 process.on("SIGTERM", () => shutdown("SIGTERM"));
+
