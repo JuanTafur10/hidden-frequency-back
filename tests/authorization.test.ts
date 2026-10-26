@@ -10,6 +10,8 @@ const secret = "secreto-de-prueba-con-al-menos-32-caracteres";
 let receivedPage = 0;
 let receivedLimit = 0;
 let reservationAuthor: string | null = null;
+let updatedProductId: number | null = null;
+let updatedProductPrice: number | undefined;
 const app = createApp({
   auth: {} as AuthService,
   products: {
@@ -18,6 +20,7 @@ const app = createApp({
       receivedLimit = input.limit;
       return { pagination: { page: input.page, limit: input.limit, total: 0, totalPages: 0 }, data: [] };
     },
+    update: async (id: number, input: { price?: number }) => { updatedProductId = id; updatedProductPrice = input.price; return { id, ...input }; },
     delete: async () => undefined
   } as unknown as ProductService,
   reservations: {
@@ -58,6 +61,14 @@ describe("protección y validación de rutas", () => {
     expect(response.status).toBe(204);
   });
 
+  it("conserva id y body por separado al actualizar un producto", async () => {
+    const response = await request(app).put("/api/products/7")
+      .set("Authorization", `Bearer ${tokenFor("admin")}`)
+      .send({ price: 250000 });
+    expect(response.status).toBe(200);
+    expect(updatedProductId).toBe(7);
+    expect(updatedProductPrice).toBe(250000);
+  });
   it("aplica la paginación predeterminada cuando no se envían parámetros", async () => {
     const response = await request(app).get("/api/products");
     expect(response.status).toBe(200);
@@ -108,3 +119,4 @@ describe("protección y validación de rutas", () => {
     expect(response.headers["access-control-allow-origin"]).toBe("https://hidden-frequency.vercel.app");
   });
 });
+

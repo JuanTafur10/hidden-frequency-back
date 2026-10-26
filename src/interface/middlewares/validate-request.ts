@@ -9,8 +9,10 @@ export function validateRequest(schema: ZodType, part: RequestPart) {
       next(result.error);
       return;
     }
-    response.locals.validated = result.data;
+    const localKey = `validated${part[0].toUpperCase()}${part.slice(1)}`;
+    response.locals[localKey] = result.data;
     if (part === "body") request.body = result.data;
     next();
   };
 }
+
