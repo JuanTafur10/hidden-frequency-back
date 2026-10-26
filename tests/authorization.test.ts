@@ -7,9 +7,18 @@ import type { ReservationService } from "../src/application/services/reservation
 import { createApp } from "../src/interface/app";
 
 const secret = "secreto-de-prueba-con-al-menos-32-caracteres";
+let receivedPage = 0;
+let receivedLimit = 0;
 const app = createApp({
   auth: {} as AuthService,
-  products: { delete: async () => undefined } as unknown as ProductService,
+  products: {
+    list: async (input: { page: number; limit: number }) => {
+      receivedPage = input.page;
+      receivedLimit = input.limit;
+      return { pagination: { page: input.page, limit: input.limit, total: 0, totalPages: 0 }, data: [] };
+    },
+    delete: async () => undefined
+  } as unknown as ProductService,
   reservations: {} as ReservationService,
   jwtSecret: secret,
   frontendUrl: "https://hidden-frequency.vercel.app"
@@ -37,5 +46,13 @@ describe("protección de rutas del catálogo", () => {
     const token = jwt.sign({ id: "admin-1", role: "admin" }, secret, { expiresIn: "5m" });
     const response = await request(app).delete("/api/products/1").set("Authorization", `Bearer ${token}`);
     expect(response.status).toBe(204);
+  });
+
+  it("aplica la paginación predeterminada cuando no se envían parámetros", async () => {
+    const response = await request(app).get("/api/products");
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({ pagination: { page: 1, limit: 12, total: 0, totalPages: 0 }, data: [] });
+    expect(receivedPage).toBe(1);
+    expect(receivedLimit).toBe(12);
   });
 });
