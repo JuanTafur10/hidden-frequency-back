@@ -16,10 +16,10 @@ export function createAuthenticate(jwtSecret: string) {
       const payload = jwt.verify(match[1], jwtSecret);
       if (typeof payload === "string") throw new Error("Invalid token payload");
       const claims = payload as JwtPayload & { role?: unknown };
-      if (typeof claims.sub !== "string" || (claims.role !== "admin" && claims.role !== "user")) {
+      if (typeof claims.id !== "string" || (claims.role !== "admin" && claims.role !== "user")) {
         throw new Error("Invalid token claims");
       }
-      (request as AuthenticatedRequest).authUser = { id: claims.sub, role: claims.role };
+      (request as AuthenticatedRequest).authUser = { id: claims.id, role: claims.role };
       next();
     } catch {
       next(new AppError(401, "Token inválido o expirado.", "INVALID_TOKEN"));
@@ -35,3 +35,4 @@ export function requireRole(...roles: Role[]) {
     next();
   };
 }
+

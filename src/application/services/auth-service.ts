@@ -34,3 +34,4 @@ export class AuthService {
     return { user: toPublicUser(user), token };
   }
 }
+
