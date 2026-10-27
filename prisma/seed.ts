@@ -38,6 +38,22 @@ async function main(): Promise<void> {
   } else {
     console.info("No se creó administrador: define SEED_ADMIN_EMAIL y SEED_ADMIN_PASSWORD localmente.");
   }
+
+  const userEmail = process.env.SEED_USER_EMAIL?.trim().toLowerCase();
+  const userPassword = process.env.SEED_USER_PASSWORD;
+  if (Boolean(userEmail) !== Boolean(userPassword)) throw new Error("Configura juntos SEED_USER_EMAIL y SEED_USER_PASSWORD.");
+  if (userPassword && Buffer.byteLength(userPassword, "utf8") < 12) throw new Error("SEED_USER_PASSWORD debe tener al menos 12 bytes.");
+  if (userEmail && userPassword) {
+    const passwordHash = await bcrypt.hash(userPassword, 12);
+    await prisma.user.upsert({
+      where: { email: userEmail },
+      update: { name: process.env.SEED_USER_NAME?.trim() || "Usuario de prueba", passwordHash, role: UserRole.USER },
+      create: { name: process.env.SEED_USER_NAME?.trim() || "Usuario de prueba", email: userEmail, passwordHash, role: UserRole.USER }
+    });
+    console.info(`Usuario de prueba actualizado: ${userEmail}`);
+  } else {
+    console.info("No se creó usuario de prueba: define SEED_USER_EMAIL y SEED_USER_PASSWORD localmente.");
+  }
   console.info(`Catálogo sincronizado: ${products.length} productos.`);
 }
 
