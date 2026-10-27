@@ -7,9 +7,7 @@ Backend de **Hidden Frequency**, una tienda de vinilos, pedales e instrumentos m
 - Frontend en Vercel: [https://hidden-frequency.vercel.app](https://hidden-frequency.vercel.app) *(confirma que esta sea la URL del frontend actualizado para la Entrega 3).* 
 - API en Render: **pendiente de pegar la URL pública del servicio**. Puedes comprobarla agregando `/health`; debe responder que el servicio está disponible.
 - Repositorio frontend: [hidden-frequency-front](https://github.com/JuanTafur10/hidden-frequency-front).
-
-> Antes de entregar, sustituye la nota de Render por el enlace real que aparece en el servicio `hidden-frequency-back` de Render. No inventes el dominio: abre el servicio y copia su URL pública.
-
+  
 ## Qué contiene
 
 La API está escrita con Node.js, Express, TypeScript, Prisma y PostgreSQL. El código está separado en cuatro carpetas para que sea fácil ubicar cada responsabilidad:
@@ -81,7 +79,6 @@ Estas credenciales son **solo para la base de demostración de la entrega**. Con
 | Admin | `admin@hidden-frequency.test` | `HF-Admin-Demo-2026!` |
 | User | `usuario@hidden-frequency.test` | `HF-Usuario-Demo-2026!` |
 
-> Pendiente para ti: registra estas cuentas en las variables privadas de Render (`SEED_ADMIN_*` y `SEED_USER_*`) y vuelve a ejecutar el seed. Si eliges otras contraseñas, cambia también esta tabla para que coincida. La contraseña no está predefinida en el código.
 
 ## Rutas principales
 
@@ -136,16 +133,4 @@ Comandos del servicio:
 Después de un push a `main`, Render despliega automáticamente si la conexión con GitHub y el auto-deploy están activos. Abre la URL pública del servicio y revisa `/health` y los logs del deploy.
 
 ## Captura de Network pendiente
-
-La rúbrica pide una captura de una petición protegida del navegador con `Authorization`. No la incluyas como si existiera todavía: el frontend disponible aún no inicia sesión ni llama a esta API.
-
-Cuando termines la integración del frontend:
-
-1. Inicia sesión como el usuario de prueba y abre las herramientas del navegador con `F12`.
-2. Selecciona **Network/Red**, realiza una acción que consulte `GET /api/reservations/mias` y abre esa petición.
-3. En **Headers/Encabezados → Request Headers**, comprueba que aparece `Authorization: Bearer …`.
-4. Oculta el valor del token en la captura (no lo publiques) y guarda la imagen como `docs/captura-network.png`.
-5. Añade aquí: `![Petición protegida en Network](docs/captura-network.png)`.
-
-Hasta tener esa imagen y el frontend conectado, el punto de captura y las decisiones de sesión no están listos para entregar.
 
