@@ -1,133 +1,151 @@
-# Hidden Frequency · API REST
+# Hidden Frequency — backend
 
-Backend de la tienda **Hidden Frequency**, basada en el catálogo de vinilos, pedales e instrumentos y el formulario de reserva de la Entrega 1. La API usa Node.js, Express 5, TypeScript, Prisma 7 y PostgreSQL.
+Backend de **Hidden Frequency**, una tienda de vinilos, pedales e instrumentos musicales. Esta API prepara el catálogo y las solicitudes de reserva de la Entrega 1 para trabajar con cuentas y una base de datos.
 
-## Arquitectura
+**Enlaces del proyecto**
 
-El código separa responsabilidades en las cuatro capas solicitadas:
+- Frontend en Vercel: [https://hidden-frequency.vercel.app](https://hidden-frequency.vercel.app) *(confirma que esta sea la URL del frontend actualizado para la Entrega 3).* 
+- API en Render: **pendiente de pegar la URL pública del servicio**. Puedes comprobarla agregando `/health`; debe responder que el servicio está disponible.
+- Repositorio frontend: [hidden-frequency-front](https://github.com/JuanTafur10/hidden-frequency-front).
 
-- `src/domain`: entidades, errores de dominio y contratos de repositorios.
-- `src/application`: servicios de autenticación, catálogo y reservas.
-- `src/infrastructure`: configuración, cliente Prisma y adaptadores PostgreSQL.
-- `src/interface`: aplicación Express, controladores, routers, validadores y middleware.
+> Antes de entregar, sustituye la nota de Render por el enlace real que aparece en el servicio `hidden-frequency-back` de Render. No inventes el dominio: abre el servicio y copia su URL pública.
 
-Los controladores traducen HTTP a llamadas de aplicación; la lógica de acceso a datos queda en los adaptadores Prisma. El `userId` de una reserva sale exclusivamente del JWT verificado, nunca del body.
+## Qué contiene
 
-## Modelo de datos
+La API está escrita con Node.js, Express, TypeScript, Prisma y PostgreSQL. El código está separado en cuatro carpetas para que sea fácil ubicar cada responsabilidad:
 
-- `users`: nombre, correo único, hash bcrypt de contraseña y rol `admin` o `user`.
-- `products`: catálogo real de la Entrega 1, con categorías limitadas, precio decimal, descripción e imagen.
-- `reservations`: solicitud asociada por llaves foráneas con el usuario y, si corresponde, el producto.
+- `src/domain`: reglas y contratos del negocio.
+- `src/application`: acciones como registrar, iniciar sesión, consultar productos y crear reservas.
+- `src/infrastructure`: conexión a PostgreSQL y acceso a los datos con Prisma.
+- `src/interface`: rutas HTTP, validaciones y controles de acceso.
 
-`productId` en una reserva es opcional: el formulario original también permite pedir un vinilo o equipo que todavía no aparece en el catálogo. La solicitud conserva el texto de lo que busca la persona aunque el producto no exista aún. Al eliminar un producto, una reserva histórica conserva su solicitud y queda con `productId` nulo.
+La base tiene usuarios (`users`), productos (`products`) y reservas (`reservations`). Una reserva se relaciona con su usuario y puede relacionarse con un producto; también permite escribir una solicitud personalizada. El seed carga los seis productos del catálogo original de la Entrega 1.
 
-El seed carga los seis elementos reales de `js/products.js`: Daft Punk - Discovery, Boss DS-1 Distortion, Korg Minilogue XD, MF DOOM - Madvillainy, Strymon BigSky y Technics SL-1200MK7. También puede crear un administrador si se configuran sus variables opcionales.
+## Ejecutarlo en tu computador
 
-## Requisitos y configuración local
+Necesitas Node.js 20.19 o superior y PostgreSQL instalado y activo. En Windows puedes hacer los pasos desde **PowerShell**, dentro de la carpeta `hidden-frequency-back`.
 
-Se requiere Node.js 20.19 o superior y PostgreSQL. Crea una base vacía, copia `.env.example` como `.env` y reemplaza sus valores; `.env` está ignorado por Git.
+1. Instala las dependencias:
 
-```bash
-npm install
-npm run prisma:generate
-npm run prisma:migrate
-npm run prisma:seed
-npm run dev
-```
+   ```powershell
+   npm install
+   ```
 
-La API local queda en `http://localhost:3001`. `npm run prisma:migrate` crea/aplica una migración en desarrollo; `npm run prisma:deploy` aplica las migraciones existentes en un despliegue. Para compilar y ejecutar pruebas:
+2. Crea una base de datos vacía en PostgreSQL, por ejemplo `hidden_frequency`.
+3. Copia `.env.example` y llama a la copia `.env`:
 
-```bash
-npm run build
-npm test
-```
+   ```powershell
+   Copy-Item .env.example .env
+   ```
 
-El cliente Prisma se genera durante `build` y `test`. La URL de respaldo en `prisma.config.ts` sirve únicamente para generar el cliente cuando aún no hay `.env`; las migraciones y el seed necesitan una `DATABASE_URL` válida.
+4. Abre `.env` y coloca la dirección de tu PostgreSQL, un secreto JWT de al menos 32 caracteres y la URL permitida del frontend. Las variables están explicadas abajo. No compartas ni subas `.env`.
+5. Crea las tablas y carga los productos y las cuentas de prueba:
 
-### Crear el administrador de prueba
+   ```powershell
+   npm run prisma:generate
+   npm run prisma:migrate
+   npm run prisma:seed
+   ```
 
-Define `SEED_ADMIN_EMAIL` y `SEED_ADMIN_PASSWORD` en `.env` (la contraseña debe tener al menos 12 bytes) y ejecuta `npm run prisma:seed`. El seed guarda un hash bcrypt con 12 rondas y asigna el rol `admin`. Si esas variables no existen, solo se carga el catálogo; nunca hay una contraseña predeterminada escondida en el código.
+6. Arranca el servidor:
 
-Al desplegar, configura las mismas variables en el entorno privado de la plataforma y ejecuta el seed. Entrega el correo y la contraseña de esa cuenta de prueba por el canal privado de evaluación; no pongas secretos de producción en este repositorio.
+   ```powershell
+   npm run dev
+   ```
 
-## Variables de entorno
+La API local queda en `http://localhost:3001`. Abre `http://localhost:3001/health` para comprobar que está activa. Para detenerla, vuelve a la ventana de PowerShell y presiona `Ctrl+C`.
 
-| Variable | Uso |
+Para compilar una versión de producción ejecuta `npm run build`; para ejecutar las pruebas automatizadas ejecuta `npm test`.
+
+### Variables de entorno
+
+| Variable | Para qué sirve |
 | --- | --- |
-| `DATABASE_URL` | Conexión PostgreSQL directa para Prisma y el adaptador `pg`. |
-| `JWT_SECRET` | Secreto de firma JWT; mínimo 32 caracteres, distinto en cada entorno. |
-| `JWT_EXPIRES_IN` | Duración del token, por ejemplo `1d` o `2h`. |
-| `PORT` | Puerto HTTP; por defecto `3001` localmente. |
-| `FRONTEND_URL` | URL/origen permitido por CORS, por ejemplo `https://hidden-frequency.vercel.app`. |
-| `SEED_ADMIN_EMAIL` | Opcional: correo para crear/actualizar el usuario administrador. |
-| `SEED_ADMIN_PASSWORD` | Opcional: contraseña del administrador, nunca guardada en el repositorio. |
-| `SEED_ADMIN_NAME` | Opcional: nombre mostrado para el administrador. |
-| `CLOUDINARY_CLOUD_NAME` | Opcional: nombre del espacio Cloudinary para habilitar carga de archivos. |
-| `CLOUDINARY_API_KEY` | Opcional: clave Cloudinary privada para el backend. |
-| `CLOUDINARY_API_SECRET` | Opcional: secreto Cloudinary; nunca se entrega al navegador. |
+| `DATABASE_URL` | Dirección de conexión a PostgreSQL. |
+| `JWT_SECRET` | Clave privada para firmar y comprobar los tokens. Usa una distinta en local y Render, de al menos 32 caracteres. |
+| `JWT_EXPIRES_IN` | Tiempo de validez del token, por ejemplo `1d` o `2h`. |
+| `PORT` | Puerto del servidor; localmente se usa `3001`. Render puede asignar su propio puerto. |
+| `FRONTEND_URL` | Dirección exacta del frontend autorizada para conectarse a la API. No uses `*`. |
+| `SEED_ADMIN_NAME`, `SEED_ADMIN_EMAIL`, `SEED_ADMIN_PASSWORD` | Opcionales, en conjunto crean o actualizan la cuenta admin al ejecutar el seed. |
+| `SEED_USER_NAME`, `SEED_USER_EMAIL`, `SEED_USER_PASSWORD` | Opcionales, en conjunto crean o actualizan una cuenta user al ejecutar el seed. |
+| `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` | Opcionales; necesarias para guardar imágenes de productos como archivos. Son privadas. |
 
-## Endpoints
+El seed requiere que cada contraseña de prueba tenga al menos 12 bytes. Las guarda cifradas con bcrypt. Para preparar ambas cuentas, define las tres variables `SEED_ADMIN_*` y las tres `SEED_USER_*` en `.env` antes de correr `npm run prisma:seed`. El seed puede volver a ejecutarse: sincroniza el catálogo y actualiza esas cuentas con los valores configurados.
 
-Las respuestas de colección tienen la forma `{ "pagination": { "page", "limit", "total", "totalPages" }, "data": [...] }`. La paginación empieza en 1, usa 12 elementos por defecto y admite hasta 100 por página.
+### Cuentas de prueba para la entrega
 
-| Método | Ruta | Acceso | Descripción |
-| --- | --- | --- | --- |
-| `POST` | `/api/auth/register` | Público | Crea cuenta de rol `user`; correo repetido devuelve `409`. |
-| `POST` | `/api/auth/login` | Público | Devuelve usuario público y JWT expirante. |
-| `GET` | `/api/products?page=1&limit=12` | Público | Catálogo paginado; filtros `category`, `search`, `minPrice`, `maxPrice` combinables. |
-| `GET` | `/api/products/:id` | Público | Detalle del producto. |
-| `POST` | `/api/products` | Admin | Crea producto. |
-| `PUT` | `/api/products/:id` | Admin | Actualiza uno o varios campos. |
-| `DELETE` | `/api/products/:id` | Admin | Borra el producto; devuelve `204`. |
-| `POST` | `/api/reservations` | Usuario autenticado | Crea una solicitud para la cuenta del token. |
-| `GET` | `/api/reservations/mias?page=1&limit=12` | Usuario autenticado | Lista únicamente las solicitudes propias. |
-| `GET` | `/api/reservations?page=1&limit=12` | Admin | Lista todas las solicitudes con datos públicos de usuario y producto. |
-| `POST` | `/api/uploads/products` | Admin | Recibe `multipart/form-data` (`image`) y guarda el archivo en Cloudinary. |
-| `GET` | `/health` | Público | Comprueba que el proceso HTTP está disponible. |
+Estas credenciales son **solo para la base de demostración de la entrega**. Configura los mismos valores en las variables `SEED_*` de Render y luego ejecuta el seed allí. No uses estas cuentas en una tienda real ni reutilices sus claves en otros servicios.
 
-Las escrituras protegidas usan `Authorization: Bearer <token>`. El token lleva únicamente `id` y `role` como claims de aplicación, más `iat` y `exp` que añade JWT. Sin token, inválido o expirado se devuelve `401`; sin rol suficiente, `403`. Las credenciales incorrectas comparten el mismo mensaje `401` y ninguna respuesta incluye `password` ni `passwordHash`.
+| Rol | Correo | Contraseña de demostración |
+| --- | --- | --- |
+| Admin | `admin@hidden-frequency.test` | `HF-Admin-Demo-2026!` |
+| User | `usuario@hidden-frequency.test` | `HF-Usuario-Demo-2026!` |
 
-### Ejemplos de cuerpos
+> Pendiente para ti: registra estas cuentas en las variables privadas de Render (`SEED_ADMIN_*` y `SEED_USER_*`) y vuelve a ejecutar el seed. Si eliges otras contraseñas, cambia también esta tabla para que coincida. La contraseña no está predefinida en el código.
 
-```json
-{
-  "name": "Ana Pérez",
-  "email": "ana@example.com",
-  "password": "una-clave-segura"
-}
-```
+## Rutas principales
 
-```json
-{
-  "title": "Daft Punk - Discovery",
-  "category": "Vinilos",
-  "price": 250000,
-  "description": "Edición especial 2LP.",
-  "imageUrl": "assets/images/daft-punk.jpg"
-}
-```
+Las listas responden con paginación y datos, por ejemplo `{ "pagination": { "page": 1, "limit": 12, "total": 6, "totalPages": 1 }, "data": [...] }`. Puedes combinar `search`, `category`, `minPrice` y `maxPrice` en productos.
 
-```json
-{
-  "productId": 1,
-  "requestedItem": "Daft Punk - Discovery",
-  "notes": "Si es posible, edición en buen estado."
-}
-```
+| Método y ruta | Quién puede usarla | Qué hace |
+| --- | --- | --- |
+| `POST /api/auth/register` | Cualquiera | Registra una cuenta `user`; correo repetido: `409`. |
+| `POST /api/auth/login` | Cualquiera | Comprueba las credenciales y devuelve un token con vencimiento. |
+| `GET /api/products?page=1&limit=12` | Cualquiera | Lista y filtra productos. |
+| `GET /api/products/:id` | Cualquiera | Muestra un producto. |
+| `POST`, `PUT /api/products` y `DELETE /api/products/:id` | Admin | Crea, modifica o elimina productos. En `PUT` se indica el id en la ruta: `PUT /api/products/:id`. |
+| `POST /api/reservations` | Usuario con sesión | Crea una solicitud a nombre del usuario autenticado. |
+| `GET /api/reservations/mias` | Usuario con sesión | Muestra solo sus solicitudes. |
+| `GET /api/reservations` | Admin | Muestra todas las solicitudes. |
+| `POST /api/uploads/products` | Admin | Sube una imagen (`multipart/form-data`, campo `image`) a Cloudinary. |
+| `GET /health` | Cualquiera | Comprueba que el servidor responde. |
 
-Para subir una imagen desde un archivo, envía el token admin como `Authorization: Bearer <token>` y el archivo en el campo multipart `image` a `POST /api/uploads/products`. Se aceptan JPEG, PNG y WebP de hasta 5 MB; el servidor revisa el contenido del archivo, lo almacena en Cloudinary y responde con `data.imageUrl`. Usa esa URL en el campo `imageUrl` al crear o actualizar el producto. Deben configurarse las tres variables `CLOUDINARY_*`; sin ellas, el endpoint responde `503` en lugar de fingir que guardó el archivo.
+Para las rutas privadas se envía el token en el encabezado `Authorization: Bearer <token>`. El backend obtiene el usuario de ese token; no acepta que el cliente elija a nombre de quién se registra una reserva.
 
-Las reservas también aceptan `requestedItem` sin `productId` para solicitudes personalizadas. Los campos no admitidos se rechazan con `400`; errores de datos duplicados devuelven `409`; entidades inexistentes devuelven `404`. Los errores inesperados responden sin stack trace.
+## Decisiones explicadas
 
-## Decisiones de implementación
+### Qué pasa cuando alguien inicia sesión
 
-1. El registro público siempre asigna rol `user`; aceptar el rol del cliente permitiría que cualquiera se creara una cuenta admin.
-2. La tabla de reserva tiene una relación opcional con `products` para representar tanto reservas de un elemento conocido como pedidos bajo encargo del formulario original.
-3. El JWT lleva un identificador y el rol, no email ni contraseña; el middleware central verifica el token y los routers aplican el control de rol.
-4. Se fijó un adaptador PostgreSQL para Prisma 7 y la URL de conexión se lee de entorno. No se versionan credenciales.
-5. El catálogo combina filtro de texto, categoría y rango de precio en el servidor; la API conserva paginación en cada consulta.
+La persona envía su correo y contraseña a `POST /api/auth/login`. La API busca la cuenta y compara la contraseña con el hash guardado. Si coinciden, firma un token que contiene el id y el rol y tiene una fecha de vencimiento; responde con el token y los datos públicos de la cuenta. Para abrir una ruta privada, el cliente debe enviar ese token en `Authorization`. El middleware del backend comprueba que siga vigente y después revisa el rol que necesita esa ruta. Si no se puede comprobar el token responde `401`; si la cuenta sí está autenticada pero no tiene el rol necesario responde `403`.
 
-## Despliegue
+**Estado de la integración del navegador:** revisé el repositorio `hidden-frequency-front` disponible y todavía contiene el sitio original en HTML, CSS y JavaScript; no tiene formulario de login, no consume esta API ni guarda un token. Por eso el flujo de navegador y la captura Network de una petición protegida aún están pendientes de la migración del frontend a Next.js. El backend por sí solo no guarda el token del navegador.
 
-En Render (o una plataforma Node equivalente), configura `DATABASE_URL`, `JWT_SECRET`, `JWT_EXPIRES_IN`, `FRONTEND_URL` y las variables `SEED_ADMIN_*` privadas. Usa `npm run build` como comando de compilación, `npm start` para iniciar y ejecuta `npm run prisma:deploy` y `npm run prisma:seed` al preparar la base. En `FRONTEND_URL` debe ir el dominio de Vercel del front, sin `*`. Para habilitar la carga de archivos, configura también las tres credenciales privadas de Cloudinary.
+Cuando integres la sesión, documenta aquí el lugar elegido para guardar el token. Guardarlo en `localStorage` permite conservar la sesión al refrescar, pero un script malicioso que logre ejecutarse en el sitio podría leerlo; una cookie `HttpOnly` reduce ese riesgo porque JavaScript no puede leerla. No afirmes que ya está implementado hasta comprobarlo en el frontend.
+
+### Diferencia entre `401` y `403`
+
+- `401` quiere decir que la solicitud no presentó una sesión válida: no envió token, el token es inválido o venció. Ejemplo: `DELETE /api/products/1` sin `Authorization`.
+- `403` quiere decir que el token sí identifica a una cuenta, pero esa cuenta no tiene permiso. Ejemplo real: un usuario con rol `user` intenta `DELETE /api/products/1`; solo `admin` puede borrar productos.
+
+El registro no permite escoger el rol: las cuentas nuevas siempre quedan como `user`. El correo ya registrado produce `409`, y el login responde el mismo `401` tanto si el correo no existe como si la contraseña es incorrecta.
+
+### Uso de IA
+
+Usé IA como apoyo para revisar la rúbrica, ordenar el trabajo del backend, aclarar errores de configuración de PostgreSQL y Render, y preparar documentación y comandos de prueba. Revisé los cambios contra el código y corregí instrucciones que no coincidían con el proyecto, como la URL de conexión de la base y los datos reales del catálogo. La IA fue una ayuda; la revisión y las decisiones finales del proyecto son mías.
+
+## Despliegue en Render
+
+El servicio de Render debe estar conectado al repositorio de GitHub. En sus variables privadas configura la conexión de PostgreSQL, un `JWT_SECRET` propio, `JWT_EXPIRES_IN`, `FRONTEND_URL` con el dominio real de Vercel y las seis variables `SEED_ADMIN_*` / `SEED_USER_*` para las cuentas de evaluación. Las variables de Cloudinary son necesarias solo si vas a usar la carga de imágenes.
+
+Comandos del servicio:
+
+- Build: `npm install && npm run build`
+- Start, después de preparar la base: `npm run prisma:deploy && npm start`
+- Preparación inicial: aplicar migraciones y ejecutar `npm run prisma:seed` una vez, con variables `SEED_*` configuradas.
+
+Después de un push a `main`, Render despliega automáticamente si la conexión con GitHub y el auto-deploy están activos. Abre la URL pública del servicio y revisa `/health` y los logs del deploy.
+
+## Captura de Network pendiente
+
+La rúbrica pide una captura de una petición protegida del navegador con `Authorization`. No la incluyas como si existiera todavía: el frontend disponible aún no inicia sesión ni llama a esta API.
+
+Cuando termines la integración del frontend:
+
+1. Inicia sesión como el usuario de prueba y abre las herramientas del navegador con `F12`.
+2. Selecciona **Network/Red**, realiza una acción que consulte `GET /api/reservations/mias` y abre esa petición.
+3. En **Headers/Encabezados → Request Headers**, comprueba que aparece `Authorization: Bearer …`.
+4. Oculta el valor del token en la captura (no lo publiques) y guarda la imagen como `docs/captura-network.png`.
+5. Añade aquí: `![Petición protegida en Network](docs/captura-network.png)`.
+
+Hasta tener esa imagen y el frontend conectado, el punto de captura y las decisiones de sesión no están listos para entregar.
 
