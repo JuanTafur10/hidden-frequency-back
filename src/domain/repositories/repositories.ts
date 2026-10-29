@@ -5,6 +5,7 @@ export interface Page<T> { pagination: { page: number; limit: number; total: num
 export interface ProductInput { title: string; category: Category; price: number; description: string; imageUrl: string }
 export interface RegisterInput { name: string; email: string; password: string }
 export interface ReservationInput { productId?: number; requestedItem: string; notes?: string }
+export interface ReservationUpdateInput { productId?: number | null; requestedItem?: string; notes?: string | null }
 export interface ReservationView extends Reservation { product: Pick<Product, "id" | "title" | "category" | "price" | "imageUrl"> | null; user?: { id: string; name: string; email: string } }
 
 export interface UserRepository {
@@ -23,4 +24,6 @@ export interface ReservationRepository {
   create(userId: string, input: ReservationInput): Promise<ReservationView>;
   listByUser(userId: string, page: number, limit: number): Promise<Page<ReservationView>>;
   listAll(page: number, limit: number): Promise<Page<ReservationView>>;
+  update(id: string, userId: string, isAdmin: boolean, input: ReservationUpdateInput): Promise<ReservationView | null>;
+  delete(id: string, userId: string, isAdmin: boolean): Promise<boolean>;
 }

@@ -1,6 +1,6 @@
 import { Prisma, type Product as PrismaProduct, type Reservation as PrismaReservation, type User as PrismaUser } from "../../generated/prisma/client";
 import type { Product, Reservation, Role, User } from "../../domain/entities/entities";
-import type { Page, PaginationInput, ProductInput, ProductRepository, ReservationInput, ReservationRepository, ReservationView, RegisterInput, UserRepository } from "../../domain/repositories/repositories";
+import type { Page, PaginationInput, ProductInput, ProductRepository, ReservationInput, ReservationRepository, ReservationUpdateInput, ReservationView, RegisterInput, UserRepository } from "../../domain/repositories/repositories";
 import { prisma } from "../database/prisma-client";
 
 function mapUser(user: PrismaUser): User {
@@ -132,6 +132,23 @@ export class PrismaReservationRepository implements ReservationRepository {
       prisma.reservation.count()
     ]);
     return { pagination: pageInfo(page, limit, total), data: rows.map(mapReservation) };
+  }
+  async update(id: string, userId: string, isAdmin: boolean, input: ReservationUpdateInput): Promise<ReservationView | null> {
+    const where: Prisma.ReservationWhereInput = { id, ...(isAdmin ? {} : { userId }) };
+    const data: Prisma.ReservationUpdateManyMutationInput = {
+      ...(input.productId !== undefined ? { productId: input.productId } : {}),
+      ...(input.requestedItem !== undefined ? { requestedItem: input.requestedItem } : {}),
+      ...(input.notes !== undefined ? { notes: input.notes } : {})
+    };
+    const updated = await prisma.reservation.updateMany({ where, data });
+    if (!updated.count) return null;
+    const row = await prisma.reservation.findUnique({ where: { id }, include: { product: true, user: { select: { id: true, name: true, email: true } } } });
+    return row ? mapReservation(row) : null;
+  }
+  async delete(id: string, userId: string, isAdmin: boolean): Promise<boolean> {
+    const where: Prisma.ReservationWhereInput = { id, ...(isAdmin ? {} : { userId }) };
+    const deleted = await prisma.reservation.deleteMany({ where });
+    return deleted.count > 0;
   }
 }
 
