@@ -48,6 +48,14 @@ export const reservationBodySchema = z.object({
   notes: z.string().trim().max(1000).optional()
 }).strict();
 
+export const reservationIdSchema = z.object({ id: z.string().uuid() }).strict();
+
+export const reservationUpdateSchema = z.object({
+  productId: z.number().int().positive().nullable().optional(),
+  requestedItem: z.string().trim().min(3).max(240).optional(),
+  notes: z.string().trim().max(1000).nullable().optional()
+}).strict().refine((body) => Object.keys(body).length > 0, "Envía al menos un campo para actualizar.");
+
 export const pageQuerySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   limit: z.coerce.number().int().positive().max(100).default(12)
@@ -59,5 +67,6 @@ export type ProductBody = z.infer<typeof productBodySchema>;
 export type ProductUpdateBody = z.infer<typeof productUpdateSchema>;
 export type ProductQuery = z.infer<typeof productQuerySchema>;
 export type ReservationBody = z.infer<typeof reservationBodySchema>;
+export type ReservationUpdateBody = z.infer<typeof reservationUpdateSchema>;
 export type PageQuery = z.infer<typeof pageQuerySchema>;
 
