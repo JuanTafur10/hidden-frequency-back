@@ -89,8 +89,11 @@ Las listas de productos y reservas usan una respuesta paginada con pagination y 
 | PUT /api/products/:id | Admin | Edita un producto. |
 | DELETE /api/products/:id | Admin | Elimina un producto. |
 | POST /api/reservations | Usuario autenticado | Crea una reserva a nombre de la persona del token. |
+| GET /api/reservations/:id | Dueño de la reserva o admin | Consulta una reserva individual; no revela reservas ajenas. |
 | GET /api/reservations/mias | Usuario autenticado | Consulta solo las reservas propias. |
 | GET /api/reservations | Admin | Consulta todas las reservas. |
+| PUT /api/reservations/:id | Dueño de la reserva o admin | Actualiza el producto, el artículo solicitado o las notas. |
+| DELETE /api/reservations/:id | Dueño de la reserva o admin | Elimina una reserva propia o, como admin, cualquier reserva. |
 | POST /api/uploads/products | Admin | Sube un archivo de imagen a Cloudinary. |
 | GET /health | Público | Comprueba que la API está activa. |
 
