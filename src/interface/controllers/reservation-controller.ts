@@ -18,6 +18,12 @@ export class ReservationController {
     const { page, limit } = response.locals.validatedQuery as PageQuery;
     response.status(200).json(await this.reservations.mine(authUser.id, page, limit));
   };
+  find = async (request: Request, response: Response): Promise<void> => {
+    const actor = (request as AuthenticatedRequest).authUser;
+    if (!actor) throw new AppError(401, "Autenticación requerida.", "UNAUTHORIZED");
+    const { id } = response.locals.validatedParams as { id: string };
+    response.status(200).json({ data: await this.reservations.findById(id, actor) });
+  };
   all = async (request: Request, response: Response): Promise<void> => {
     const { page, limit } = response.locals.validatedQuery as PageQuery;
     response.status(200).json(await this.reservations.all(page, limit));

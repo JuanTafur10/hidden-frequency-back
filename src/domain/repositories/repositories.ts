@@ -22,6 +22,7 @@ export interface ProductRepository {
 }
 export interface ReservationRepository {
   create(userId: string, input: ReservationInput): Promise<ReservationView>;
+  findById(id: string, userId: string, isAdmin: boolean): Promise<ReservationView | null>;
   listByUser(userId: string, page: number, limit: number): Promise<Page<ReservationView>>;
   listAll(page: number, limit: number): Promise<Page<ReservationView>>;
   update(id: string, userId: string, isAdmin: boolean, input: ReservationUpdateInput): Promise<ReservationView | null>;

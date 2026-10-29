@@ -118,6 +118,13 @@ export class PrismaReservationRepository implements ReservationRepository {
     });
     return mapReservation(row);
   }
+  async findById(id: string, userId: string, isAdmin: boolean): Promise<ReservationView | null> {
+    const row = await prisma.reservation.findFirst({
+      where: { id, ...(isAdmin ? {} : { userId }) },
+      include: { product: true, user: { select: { id: true, name: true, email: true } } }
+    });
+    return row ? mapReservation(row) : null;
+  }
   async listByUser(userId: string, page: number, limit: number): Promise<Page<ReservationView>> {
     const where = { userId };
     const [rows, total] = await prisma.$transaction([

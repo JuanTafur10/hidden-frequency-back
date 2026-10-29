@@ -12,6 +12,7 @@ export function createReservationRouter(service: ReservationService, jwtSecret: 
   router.post("/", authenticate, validateRequest(reservationBodySchema, "body"), controller.create);
   router.get("/mias", authenticate, validateRequest(pageQuerySchema, "query"), controller.mine);
   router.get("/", authenticate, requireRole("admin"), validateRequest(pageQuerySchema, "query"), controller.all);
+  router.get("/:id", authenticate, validateRequest(reservationIdSchema, "params"), controller.find);
   router.put("/:id", authenticate, validateRequest(reservationIdSchema, "params"), validateRequest(reservationUpdateSchema, "body"), controller.update);
   router.delete("/:id", authenticate, validateRequest(reservationIdSchema, "params"), controller.delete);
   return router;

@@ -13,6 +13,11 @@ export class ReservationService {
   mine(userId: string, page: number, limit: number): Promise<Page<ReservationView>> {
     return this.reservations.listByUser(userId, page, limit);
   }
+  async findById(id: string, actor: AuthenticatedUser): Promise<ReservationView> {
+    const reservation = await this.reservations.findById(id, actor.id, actor.role === "admin");
+    if (!reservation) throw new AppError(404, "No se encontró la reserva solicitada.", "RESERVATION_NOT_FOUND");
+    return reservation;
+  }
   all(page: number, limit: number): Promise<Page<ReservationView>> {
     return this.reservations.listAll(page, limit);
   }
